@@ -28,28 +28,57 @@ SquareToCircle
 This scene is what we wrote in :doc:`quickstart`.
 No more explanation here
 
-WarpSquare
-----------
+AnimatingMethods
+----------------
 
-.. manim-example:: WarpSquare
-   :media: ../_static/example_scenes/WarpSquare.mp4
+.. manim-example:: AnimatingMethods
+    :media: ../_static/example_scenes/AnimatingMethods.mp4
 
-   class WarpSquare(Scene):
-       def construct(self):
-           square = Square()
-           self.play(square.apply_complex_function, np.exp)
-           self.wait()
+    class AnimatingMethods(Scene):
+        def construct(self):
+            grid = Tex(r"\pi").get_grid(10, 10, height=4)
+            self.add(grid)
 
-The new usage in this scene is ``self.play(square.apply_complex_function, np.exp)``, 
-which shows an animation of applying a complex function :math:`f(z)=e^z` to a square. 
-It is equivalent to transforming the original square into the result after 
-applying a function.
+            # If you pass in a mobject method to the scene's "play" function,
+            # it will apply an animation interpolating between the mobject's
+            # initial state and whatever happens when you apply that method.
+            # For example, calling grid.shift(2 * LEFT) would shift it two units
+            # to the left, but the following line animates that motion.
+            self.play(grid.shift, 2 * LEFT)
+            # The same applies for any method, including those setting colors.
+            self.play(grid.set_submobject_colors_by_gradient, BLUE, GREEN)
+            self.play(grid.set_height, TAU - MED_SMALL_BUFF)
+            self.wait()
+
+            # The method Mobject.apply_complex_function lets you apply arbitrary
+            # complex functions, treating the points defining the mobject as
+            # complex numbers.
+            self.play(grid.apply_complex_function, np.exp, run_time=5)
+            self.wait()
+
+            # Even more generally, you could apply Mobject.apply_function,
+            # which takes in functions form R^3 to R^3
+            self.play(
+                grid.apply_function,
+                lambda p: [
+                    p[0] + 0.5 * math.sin(p[1]),
+                    p[1] + 0.5 * math.sin(p[0]),
+                    p[2]
+                ],
+                run_time=5,
+            )
+            self.wait()
+
+The new usage in this scene is ``.get_grid()`` and ``self.play(mob.method, args)``.
+
+- ``.get_grid()`` method will return a new mobject containing multiple copies of this one arranged in a grid.
+- ``self.play(mob.method, args)`` animate the method, and the details are in the comments above.
 
 TextExample
 -----------
 
 .. manim-example:: TextExample
-   :media: ../_static/example_scenes/TextExample.mp4
+    :media: ../_static/example_scenes/TextExample.mp4
 
     class TextExample(Scene):
         def construct(self):
@@ -99,7 +128,7 @@ TexTransformExample
 -------------------
 
 .. manim-example:: TexTransformExample
-   :media: ../_static/example_scenes/TexTransformExample.mp4
+    :media: ../_static/example_scenes/TexTransformExample.mp4
 
     class TexTransformExample(Scene):
         def construct(self):
@@ -220,7 +249,7 @@ UpdatersExample
 ---------------
 
 .. manim-example:: UpdatersExample
-   :media: ../_static/example_scenes/UpdatersExample.mp4
+    :media: ../_static/example_scenes/UpdatersExample.mp4
 
     class UpdatersExample(Scene):
         def construct(self):
@@ -289,10 +318,11 @@ UpdatersExample
             )
             self.wait(4 * PI)
 
-The new classes and usage in this scene are ``DecimalNumber``, ``.to_edge()``, 
-``.center()``, ``always_become()``, ``always()``, ``f_always()``, ``.set_y()`` and ``.add_updater()``.
+The new classes and usage in this scene are ``always_redraw()``, ``DecimalNumber``, ``.to_edge()``, 
+``.center()``, ``always()``, ``f_always()``, ``.set_y()`` and ``.add_updater()``.
 
-- ``DecimalNumber`` is a variable number, speed it up by breaking it into ``Tex`` characters.
+- ``always_redraw()`` function create a new mobject every frame.
+- ``DecimalNumber`` is a variable number, speed it up by breaking it into ``Text`` characters.
 - ``.to_edge()`` means to place the object on the edge of the screen.
 - ``.center()`` means to place the object in the center of the screen.
 - ``always(f, x)`` means that a certain function (``f(x)``) is executed every frame.
@@ -304,7 +334,7 @@ SurfaceExample
 --------------
 
 .. manim-example:: SurfaceExample
-   :media: ../_static/example_scenes/SurfaceExample.mp4
+    :media: ../_static/example_scenes/SurfaceExample.mp4
 
     class SurfaceExample(Scene):
         CONFIG = {
@@ -405,95 +435,66 @@ OpeningManimExample
 -------------------
 
 .. manim-example:: OpeningManimExample
-   :media: ../_static/example_scenes/OpeningManimExample.mp4
+    :media: ../_static/example_scenes/OpeningManimExample.mp4
+
 
     class OpeningManimExample(Scene):
         def construct(self):
-            title = TexText("This is some \\LaTeX")
-            basel = Tex(
-                "\\sum_{n=1}^\\infty "
-                "\\frac{1}{n^2} = \\frac{\\pi^2}{6}"
-            )
-            VGroup(title, basel).arrange(DOWN)
-            self.play(
-                Write(title),
-                FadeIn(basel, UP),
-            )
-            self.wait()
+            intro_words = Text("""
+                The original motivation for manim was to
+                better illustrate mathematical functions
+                as transformations.
+            """)
+            intro_words.to_edge(UP)
 
-            transform_title = Text("That was a transform")
-            transform_title.to_corner(UL)
-            self.play(
-                Transform(title, transform_title),
-                LaggedStartMap(FadeOut, basel, shift=DOWN),
-            )
-            self.wait()
+            self.play(Write(intro_words))
+            self.wait(2)
 
-            fade_comment = Text(
-                """
-                You probably don't want to overuse
-                Transforms, though, a simple fade often
-                looks nicer.
-                """,
-                font_size=36,
-                color=GREY_B,
-            )
-            fade_comment.next_to(
-                transform_title, DOWN,
-                buff=LARGE_BUFF,
-                aligned_edge=LEFT
-            )
-            self.play(FadeIn(fade_comment, shift=DOWN))
-            self.wait(3)
-
+            # Linear transform
             grid = NumberPlane((-10, 10), (-5, 5))
-            grid_title = Text(
-                "But manim is for illustrating math, not text",
-            )
-            grid_title.to_edge(UP)
-            grid_title.add_background_rectangle()
-
-            self.add(grid, grid_title)  # Make sure title is on top of grid
-            self.play(
-                FadeOut(title, shift=LEFT),
-                FadeOut(fade_comment, shift=LEFT),
-                FadeIn(grid_title),
-                ShowCreation(grid, run_time=3, lag_ratio=0.1),
-            )
-            self.wait()
-
             matrix = [[1, 1], [0, 1]]
-            linear_transform_title = VGroup(
+            linear_transform_words = VGroup(
                 Text("This is what the matrix"),
                 IntegerMatrix(matrix, include_background_rectangle=True),
                 Text("looks like")
             )
-            linear_transform_title.arrange(RIGHT)
-            linear_transform_title.to_edge(UP)
+            linear_transform_words.arrange(RIGHT)
+            linear_transform_words.to_edge(UP)
+            linear_transform_words.set_stroke(BLACK, 10, background=True)
 
             self.play(
-                FadeOut(grid_title),
-                FadeIn(linear_transform_title),
+                ShowCreation(grid),
+                FadeTransform(intro_words, linear_transform_words)
             )
+            self.wait()
             self.play(grid.apply_matrix, matrix, run_time=3)
             self.wait()
 
-            grid_transform_title = Text(
-                "And this is a nonlinear transformation"
-            )
-            grid_transform_title.set_stroke(BLACK, 5, background=True)
-            grid_transform_title.to_edge(UP)
-            grid.prepare_for_nonlinear_transform(100)
+            # Complex map
+            c_grid = ComplexPlane()
+            moving_c_grid = c_grid.copy()
+            moving_c_grid.prepare_for_nonlinear_transform()
+            c_grid.set_stroke(BLUE_E, 1)
+            c_grid.add_coordinate_labels(number_config={"font_size": 36})
+            complex_map_words = TexText("""
+                Or thinking of the plane as $\\mathds{C}$,\\\\
+                this is the map $z \\rightarrow z^2$
+            """)
+            complex_map_words.to_corner(UR)
+            complex_map_words.set_stroke(BLACK, 5, background=True)
+
             self.play(
-                ApplyPointwiseFunction(
-                    lambda p: p + np.array([np.sin(p[1]), np.sin(p[0]), 0]),
-                    grid,
-                    run_time=5,
-                ),
-                FadeOut(linear_transform_title),
-                FadeIn(grid_transform_title),
+                FadeOut(grid),
+                Write(c_grid, run_time=3),
+                FadeIn(moving_c_grid),
+                FadeTransform(linear_transform_words, complex_map_words),
             )
             self.wait()
+            self.play(
+                moving_c_grid.apply_complex_function, lambda z: z**2,
+                run_time=6,
+            )
+            self.wait(2)
 
 This scene is a comprehensive application of a two-dimensional scene.
 
